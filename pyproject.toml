@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lbc-mcp"
+version = "0.1.0"
+description = "Serveur MCP pour chercher des annonces Leboncoin depuis Claude, via la bibliotheque lbc."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Bruno Rocha" }]
+keywords = ["mcp", "leboncoin", "claude", "lbc", "scraper"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: French",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "lbc>=1.1.6,<2",
+    "mcp>=2.2,<3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+lbc-mcp = "lbc_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lbc_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
