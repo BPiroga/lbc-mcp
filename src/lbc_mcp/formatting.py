@@ -178,10 +178,21 @@ def export_filename(label: str, extension: str) -> str:
     return f"leboncoin_{slug}_{datetime.now():%Y%m%d_%H%M%S}.{extension}"
 
 
+def _french_number(value: float | None) -> str:
+    """8190.0 -> "8190", 44.55 -> "44,55" : Excel en francais attend la virgule."""
+    if value is None:
+        return ""
+    if float(value).is_integer():
+        return str(int(value))
+    return str(value).replace(".", ",")
+
+
 def _export_row(ad: lbc.Ad) -> dict[str, Any]:
     data = ad_to_dict(ad, full=True)
     data["attributes"] = " | ".join(f"{k}: {v}" for k, v in ad_attributes(ad).items())
     data["image"] = ad.images[0] if ad.images else ""
+    for column in ("price", "latitude", "longitude"):
+        data[column] = _french_number(data[column])
     return {column: data.get(column) for column in EXPORT_COLUMNS}
 
 

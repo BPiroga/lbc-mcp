@@ -69,11 +69,14 @@ Tous facultatifs, à passer en variables d'environnement (clé `"env"` dans la c
 |---|---|---|
 | `LBC_MIN_INTERVAL` | `2` | Secondes minimales entre deux requêtes à Leboncoin. |
 | `LBC_PROXY` | aucun | Proxy à utiliser, forme `http://utilisateur:motdepasse@hote:port`. |
+| `LBC_IMPERSONATE` | `chrome_android` | Navigateur dont lbc imite l'empreinte TLS (voir ci-dessous). |
 | `LBC_EXPORT_DIR` | `Téléchargements\leboncoin` | Dossier des exports CSV/JSON. |
 
 ## Gros volumes et blocages
 
-Leboncoin est protégé par Datadome. Une rafale de requêtes fait bloquer l'adresse IP pendant plusieurs minutes : lors des essais, le blocage est tombé dès la sixième requête envoyée en quelques secondes. Le serveur espace donc toutes ses requêtes d'au moins deux secondes, et s'il est bloqué au milieu d'une récupération de plusieurs pages, il rend ce qu'il a déjà obtenu au lieu de tout perdre.
+Leboncoin est protégé par Datadome, qui trie d'abord les clients d'après leur empreinte TLS. lbc en choisit une au hasard parmi quatre navigateurs ; lors des essais (septembre 2026), seule `chrome_android` passait (8 fois sur 8), les trois autres étant refusées dès la première requête. Utilisé tel quel, lbc échoue donc environ trois fois sur quatre. Le serveur fixe `chrome_android` par défaut ; si Datadome change de règles, `LBC_IMPERSONATE` permet d'en essayer une autre (`chrome`, `edge`, `safari`, `safari_ios`, `firefox`…).
+
+Le débit toléré, lui, n'est pas connu. Par prudence, le serveur espace ses requêtes d'au moins deux secondes, et s'il est bloqué au milieu d'une récupération de plusieurs pages, il rend ce qu'il a déjà obtenu au lieu de tout perdre.
 
 Pour de gros volumes :
 
@@ -85,6 +88,7 @@ Pour de gros volumes :
 
 - **Villes.** lbc attend des coordonnées GPS. Le serveur les obtient auprès de l'API publique [geo.api.gouv.fr](https://geo.api.gouv.fr) : on peut donner un nom de commune, un code postal, ou `Saint-Denis (974)` pour lever une homonymie.
 - **Départements.** Les listes de lbc couvrent la métropole hors Corse ; pour la Corse et l'outre-mer, il faut passer par les régions.
+- **Export CSV.** Séparateur point-virgule, UTF-8 avec BOM et virgule décimale : le fichier s'ouvre directement dans Excel en français, accents et nombres compris.
 - **Tri par prix.** Dans lbc 1.1.6, `Sort.CHEAPEST` et `Sort.EXPENSIVE` sont inversés. Le serveur choisit le tri d'après sa valeur réelle (`price`/`asc` ou `desc`), ce qui restera juste quand lbc sera corrigé.
 - **URL de recherche.** Le serveur décode l'URL et remet ses paramètres dans un ordre que lbc accepte, avant de la lui passer. Le paramètre `page` de l'URL est respecté.
 

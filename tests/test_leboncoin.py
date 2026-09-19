@@ -193,3 +193,20 @@ def test_not_found_is_explained():
 
     with pytest.raises(LeboncoinError, match="Introuvable"):
         gateway._call(missing)
+
+
+def test_client_uses_the_fingerprint_datadome_accepts(monkeypatch):
+    created = {}
+
+    def fake_client(**kwargs):
+        created.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(lbc, "Client", fake_client)
+    monkeypatch.delenv("LBC_IMPERSONATE", raising=False)
+    Leboncoin(min_interval=0)._call(lambda client: None)
+    assert created["impersonate"] == "chrome_android"
+
+    monkeypatch.setenv("LBC_IMPERSONATE", "safari")
+    Leboncoin(min_interval=0)._call(lambda client: None)
+    assert created["impersonate"] == "safari"

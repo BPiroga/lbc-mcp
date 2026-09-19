@@ -45,6 +45,7 @@ def test_csv_export_opens_in_french_excel(tmp_path, monkeypatch, raw_ad):
     assert rows[0]["title"] == "Nintendo Switch OLED"
     assert rows[0]["attributes"] == "condition: Très bon état | console_brand: Nintendo"
     assert rows[0]["image"] == "https://img.leboncoin.fr/a.jpg"
+    assert (rows[0]["price"], rows[0]["latitude"]) == ("150", "45,76")
 
 
 def test_json_export(tmp_path, monkeypatch, raw_ad):

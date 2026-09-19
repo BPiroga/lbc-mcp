@@ -4,11 +4,13 @@ Ce module traduit les criteres recus par les outils MCP en appels lbc, et
 rien de plus : lbc s'occupe de la session, de l'imitation d'un navigateur et
 du format de l'API.
 
-Leboncoin est protege par Datadome. Quelques requetes en rafale suffisent a
-faire bloquer l'adresse IP pendant plusieurs minutes (le blocage est tombe des
-la sixieme requete lors des essais). Toutes les requetes passent donc par un
-client unique, derriere un verrou qui les espace d'au moins LBC_MIN_INTERVAL
-secondes, meme quand plusieurs outils sont appeles en parallele.
+Leboncoin est protege par Datadome, qui filtre d'abord sur l'empreinte TLS du
+client. lbc en tire une au hasard parmi quatre ; lors des essais du
+19/09/2026, seule chrome_android passait (8 sur 8), les autres etant refusees
+des la premiere requete. On la fixe donc, sauf si LBC_IMPERSONATE dit autre
+chose. Le seuil de debit tolere n'etant pas connu, toutes les requetes passent
+en plus par un client unique, derriere un verrou qui les espace d'au moins
+LBC_MIN_INTERVAL secondes, meme quand plusieurs outils sont appeles en parallele.
 """
 
 from __future__ import annotations
@@ -48,11 +50,13 @@ SORTS: dict[str, lbc.Sort] = {
 RANGE_FLOOR = 0
 RANGE_CEILING = 999_999_999
 
+DEFAULT_IMPERSONATE = "chrome_android"
+
 BLOCKED_MESSAGE = (
-    "Leboncoin (Datadome) bloque temporairement les requetes de cette adresse IP. "
-    "Attendre quelques minutes avant de relancer, espacer davantage les requetes "
-    "(variable LBC_MIN_INTERVAL) ou passer par un proxy residentiel francais "
-    "(variable LBC_PROXY)."
+    "Leboncoin (Datadome) a refuse la requete. Attendre quelques minutes avant de "
+    "relancer, espacer davantage les requetes (variable LBC_MIN_INTERVAL), essayer "
+    "une autre empreinte de navigateur (variable LBC_IMPERSONATE) ou passer par un "
+    "proxy residentiel francais (variable LBC_PROXY)."
 )
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
@@ -361,7 +365,11 @@ class Leboncoin:
                     # Une seule relance : lbc la fait sans attendre, apres avoir
                     # recree sa session (une requete de plus). Les enchainer
                     # contre Datadome ne fait que prolonger le blocage.
-                    self._client = lbc.Client(proxy=proxy_from_env(), max_retries=1)
+                    self._client = lbc.Client(
+                        proxy=proxy_from_env(),
+                        impersonate=os.environ.get("LBC_IMPERSONATE") or DEFAULT_IMPERSONATE,
+                        max_retries=1,
+                    )
                 return action(self._client)
             except DatadomeError:
                 self._client = None  # repartir d'une session neuve la prochaine fois
